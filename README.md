@@ -167,5 +167,5 @@ print(info)  # {'objects_on_table': 4, 'objects_in_bin': 0, 'objects_dropped': 0
 - 頭の 2 関節に駆動がなく重力で垂れていたので、位置制御を足した（`env.set_head_pose()`）
   - The two head joints had no actuators and sagged under gravity, so position control was added (`env.set_head_pose()`)
 
-## 開発の進め方 / How to develop
+## 開発 / Develop
 
