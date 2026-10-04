@@ -23,6 +23,8 @@ OBJECT_TYPES: dict[str, tuple[int, list[float], list[float], float]] = {
     "plate": (mujoco.mjtGeom.mjGEOM_CYLINDER, [0.09, 0.008], [0.95, 0.95, 0.9, 1], 0.30),
     "bottle": (mujoco.mjtGeom.mjGEOM_CYLINDER, [0.03, 0.08], [0.2, 0.6, 0.3, 1], 0.25),
     "box": (mujoco.mjtGeom.mjGEOM_BOX, [0.04, 0.03, 0.02], [0.8, 0.5, 0.2, 1], 0.10),
+    # XLeRobot の手（最大開き約 8.5cm）でつかみやすい細めのコップ。つかむ練習はまずこれで行う
+    "glass": (mujoco.mjtGeom.mjGEOM_CYLINDER, [0.025, 0.05], [0.6, 0.8, 0.95, 1], 0.12),
 }
 
 STAIN_RGBA = np.array([0.45, 0.28, 0.12, 1.0])
@@ -36,6 +38,9 @@ class SceneConfig:
     table_half_size: tuple[float, float] = (0.45, 0.30)
     table_height: float = 0.72
     object_types: list[str] = field(default_factory=lambda: ["cup", "plate", "bottle", "box"])
+    # 物を置く範囲を、テーブルの手前の辺からこの距離 [m] までに限る（None なら全面）。
+    # XLeRobot の腕は手前から 30cm ほどしか届かないので、つかむ練習では手前に置く
+    object_max_depth: float | None = None
     n_stains: int = 3
     stain_radius_range: tuple[float, float] = (0.03, 0.06)
     # 回収した食器を入れる下げ膳用のビン（テーブルの横に固定）
@@ -88,6 +93,9 @@ def build_scene(
     spec.modelname = "tabulasense_scene"
     spec.option.timestep = 0.002
     spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
+    # 物をつかむシミュレーションで一般的な設定（摩擦で物が指から滑り出にくくなる）
+    spec.option.cone = mujoco.mjtCone.mjCONE_ELLIPTIC
+    spec.option.impratio = 10
     spec.visual.global_.offwidth = 1280
     spec.visual.global_.offheight = 960
     world = spec.worldbody
@@ -139,6 +147,10 @@ def build_scene(
     for jaw, site in (("Fixed_Jaw_2", "grip_R"), ("Fixed_Jaw", "grip_L")):
         spec.body(jaw).add_site(name=site, pos=[-0.01, -0.09, 0], size=[0.008, 0, 0], rgba=[1, 0, 0, 0.5])
         gripper_sites.append(site)
+    # つかむときの基準点（ここに物の中心を合わせる）。glass（半径 2.5cm）に合わせてある:
+    # 固定側の指の内側（x=0.008）から半径＋5mm、手のひら（y=-0.039）から半径＋2cm の位置
+    for jaw, site in (("Fixed_Jaw_2", "pinch_R"), ("Fixed_Jaw", "pinch_L")):
+        spec.body(jaw).add_site(name=site, pos=[-0.022, -0.085, 0], size=[0.006, 0, 0], rgba=[0, 1, 0, 0.5])
 
     wiper_site = None
     if cfg.attach_wiper:
@@ -189,6 +201,13 @@ def _tune_robot(spec: mujoco.MjSpec, cfg: SceneConfig) -> None:
     # 速度指令への追従を良くする（上流は kv=10 で、質量に対して弱すぎる）
     for name in ("slider_actuator_x", "slider_actuator_y", "hinge_actuator_z"):
         spec.actuator(name).set_to_velocity(kv=cfg.base_velocity_gain)
+
+    # 指先にゴムを貼った想定で、グリッパーの摩擦を上げる（実機の SO-100 でもよく行う改造）。
+    # この指は V 字に閉じるので、摩擦が小さいと握った物が指先へ押し出される
+    for jaw in ("Fixed_Jaw", "Moving_Jaw", "Fixed_Jaw_2", "Moving_Jaw_2"):
+        for geom in spec.body(jaw).geoms:
+            if geom.type == mujoco.mjtGeom.mjGEOM_MESH:
+                geom.friction = [2.0, 0.05, 0.001]
 
     _add_head_actuators(spec)
 

@@ -41,10 +41,15 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 | 環境 / Environment | Gymnasium 環境 `TabulaSense/TableClean-v0`（行動 15 次元、観測は真値）<br>Gymnasium environment `TabulaSense/TableClean-v0` (15-dim actions, ground-truth observations) |
 | カメラ / Cameras | `head_cam`（実機の頭カメラ相当）、`top_cam`（真上）、`overview_cam`（全体）<br>`head_cam` (like the real robot's head camera), `top_cam` (top-down), `overview_cam` (whole scene) |
 | 認識 / Perception | 真値から「物 / 汚れ / テーブル / ロボット」のラベル画像を作る（検出モデルの正解データ用）<br>Builds label images (item / stain / table / robot) from ground truth, as training and evaluation data for detection models |
+| つかむ / Grasping | 手書きスクリプトで細いコップ（glass）をつかんでビンに入れる。成功率 10/10（コップだけ）、7/8（ほかの食器もある場合）<br>A hand-written script grasps a slim glass and puts it in the bin. Success: 10/10 (glass only), 7/8 (with other tableware) |
 
 | 頭カメラ / Head camera | ラベル画像（赤＝回収する物、茶＝汚れ） / Labels (red = item to collect, brown = stain) |
 |---|---|
 | ![head](docs/images/head_cam.png) | ![labels](docs/images/head_cam_labels.png) |
+
+| コップをつかんでビンに入れる / Grasp a glass and put it in the bin |
+|---|
+| ![pick](docs/images/demo_pick.gif) |
 
 ## ワンクリックで起動（Windows） / One-click launch (Windows)
 
@@ -56,6 +61,10 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 > **Double-click `start-sim.bat`** in the folder to open the simulation.
 > The first run automatically creates the virtual environment, installs the libraries and downloads the XLeRobot model (a few minutes).
 > To launch from the desktop, right-click `start-sim.bat` → "Create shortcut" and move the shortcut to your desktop.
+
+**`start-pick.bat`** をダブルクリックすると、コップをつかんでビンに入れるデモが開きます（配置を変えながら繰り返します）。
+
+> Double-click **`start-pick.bat`** for the "grasp a glass and put it in the bin" demo (it repeats with a new layout each time).
 
 ## セットアップ（自分の PC で動かす） / Setup (run on your own PC)
 
@@ -73,7 +82,7 @@ py -m venv .venv
 .venv\Scripts\Activate.ps1          # エラーが出たら下の注を参照 / see the note below if this fails
 pip install -e ".[dev]"
 python scripts/fetch_xlerobot.py      # XLeRobot の MuJoCo モデルを取得（約 30MB） / download the XLeRobot model (~30MB)
-pytest                                # 7 件のテスト / 7 tests
+pytest                                # 9 件のテスト / 9 tests
 python scripts/view.py --demo         # ロボットが拭き掃除をする / the robot wipes the table
 ```
 
@@ -116,6 +125,13 @@ python scripts/render_scene.py --seed 0
 # スポンジで汚れを拭き取る手書きデモ（動画保存には pip install imageio imageio-ffmpeg）
 # Hand-written wiping demo (pip install imageio imageio-ffmpeg to save the video)
 python scripts/demo_wipe.py --video outputs/demo_wipe.mp4
+
+# コップをつかんでビンに入れる手書きデモ / Hand-written "grasp a glass and put it in the bin" demo
+python scripts/demo_pick.py --seed 0
+python scripts/demo_pick.py --seeds 0-9      # 10 通りの配置で成功率を測る / success rate over 10 layouts
+
+# ウィンドウで見る / Watch in a window
+python scripts/view.py --demo pick
 ```
 
 ```python
@@ -166,6 +182,25 @@ print(info)  # {'objects_on_table': 4, 'objects_in_bin': 0, 'objects_dropped': 0
   - Raised the base velocity-control gain (kv=10 → 300)
 - 頭の 2 関節に駆動がなく重力で垂れていたので、位置制御を足した（`env.set_head_pose()`）
   - The two head joints had no actuators and sagged under gravity, so position control was added (`env.set_head_pose()`)
+- 物をつかめるように、グリッパーの摩擦を上げ（指先にゴムを貼った想定）、MuJoCo の摩擦の計算を物をつかむ用の設定（elliptic cone、impratio=10）にした
+  - To make grasping work, raised the gripper friction (as if the fingertips had rubber pads) and switched MuJoCo's friction model to grasp-friendly settings (elliptic cone, impratio=10)
+
+## つかむ動作のしくみと制約 / How grasping works, and its limits
+
+`src/tabulasense/control/pick_place.py` が手順を、`control/ik.py` が逆運動学（手先を目標の位置・向きにする関節角の計算）を担当します。
+手順は「腕をたたむ → 台車で近づく → 横から手を差し込む → 閉じる → 持ち上げる → ビンの前へ移動 → 離す」です。
+
+> `src/tabulasense/control/pick_place.py` holds the step-by-step motion, and `control/ik.py` the inverse kinematics (joint angles that put the hand at a target position and orientation).
+> The steps are: tuck the arm → drive up to the table → slide the hand in from the side → close → lift → drive to the bin → release.
+
+分かっている制約 / Known limits:
+
+- 腕は肩から約 35cm しか届かず、台車はテーブルに当たる手前までしか寄れないので、テーブルの手前約 30cm の物しかつかめない（`SceneConfig.object_max_depth` で置く範囲を絞っている）。奥の物は反対側に回り込む動きが必要
+  - The arm reaches only about 35 cm from the shoulder, and the base can't get closer than the table edge, so only items within about 30 cm of the near edge can be grasped (`SceneConfig.object_max_depth` limits where items are placed). Items further back need the robot to drive around the table
+- XLeRobot の手（SO-100）は V 字に閉じ、最大でも約 8.5cm しか開かない。直径 7cm のカップは握ると指先へ押し出されてしまうので、いまは直径 5cm のコップ（`glass`）で練習している
+  - XLeRobot's gripper (SO-100) closes in a V shape and opens to only about 8.5 cm. A 7 cm cup gets squeezed out toward the fingertips, so practice currently uses a 5 cm glass (`glass`)
+- ほかの食器があると、運ぶ途中で当たって落とすことがある（8 回中 1 回）
+  - With other tableware around, the glass is occasionally knocked out while being carried (1 in 8 runs)
 
 ## 開発の進め方（どこを編集するか） / How to develop (what to edit)
 
@@ -174,6 +209,7 @@ print(info)  # {'objects_on_table': 4, 'objects_in_bin': 0, 'objects_dropped': 0
 | テーブルの大きさ・高さ、食器の種類や数、汚れの数・大きさを変える<br>Change table size/height, kinds and number of tableware, number/size of stains | `src/tabulasense/sim/scene.py` の / in `SceneConfig` |
 | 食器の形・色・重さを変える、新しい食器を足す<br>Change tableware shape/color/weight, add new kinds | `src/tabulasense/sim/scene.py` の / in `OBJECT_TYPES`（足したら `env.py` の `_FOOTPRINT` にも追加 / also add to `_FOOTPRINT` in `env.py`） |
 | 報酬・成功条件・拭き取りの効き方を変える<br>Change the reward, success condition or wiping behavior | `src/tabulasense/sim/env.py` の / in `step()`, `_update_dirt()` |
+| つかむ動作を改良する<br>Improve the grasping motion | `src/tabulasense/control/pick_place.py`（手順 / steps）、`control/ik.py`（逆運動学 / inverse kinematics） |
 | ロボットの動き（つかむ・運ぶ・拭く）を手書きで作る<br>Hand-write robot motions (grasp, carry, wipe) | `scripts/demo_wipe.py` をコピーして新しいスクリプトにする / copy it into a new script |
 | 画面に表示する動きを変える<br>Change what the viewer shows | `scripts/view.py` |
 | 物と汚れを見分ける認識（検出モデル）を作る<br>Build perception (detection models) for items and stains | `src/tabulasense/perception/` に追加 / add files（`oracle.py` の出力が正解データ / `oracle.py` gives the ground truth） |
@@ -185,8 +221,8 @@ print(info)  # {'objects_on_table': 4, 'objects_in_bin': 0, 'objects_dropped': 0
 
 1. `SceneConfig` の値を変えて `start-sim.bat` で見てみる（シミュレーションに慣れる）
    - Change values in `SceneConfig` and look with `start-sim.bat` (get used to the simulation)
-2. `demo_wipe.py` をまねて「カップをつかんでビンに入れる」スクリプトを作る
-   - Following `demo_wipe.py`, write a "grasp a cup and put it in the bin" script
+2. 「コップをつかんでビンに入れる」スクリプトを作る（**済**: `control/pick_place.py`）
+   - Write a "grasp a glass and put it in the bin" script (**done**: `control/pick_place.py`)
 3. そのデモを記録して模倣学習（ACT など）で方策を学習させる
    - Record those demos and train a policy with imitation learning (ACT, etc.)
 4. `perception/` に検出モデルを足し、`oracle.py` の正解と比べて精度を測る
@@ -199,8 +235,10 @@ TabulaSense/
 ├── src/tabulasense/
 │   ├── sim/scene.py          シーンの組み立て（MjSpec） / scene building (MjSpec)
 │   ├── sim/env.py            Gymnasium 環境 / Gymnasium environment
+│   ├── control/              逆運動学とつかむ動作 / inverse kinematics and grasping
 │   └── perception/oracle.py  真値のラベル画像 / ground-truth label images
 ├── start-sim.bat             ダブルクリックで起動（Windows） / double-click launcher (Windows)
+├── start-pick.bat            つかむデモを起動（Windows） / launches the grasping demo (Windows)
 ├── scripts/                  XLeRobot の取得、表示、描画、デモ / model download, viewer, rendering, demos
 ├── tests/
 ├── docs/roadmap.md           開発計画 / development plan

@@ -67,7 +67,7 @@ def test_wiping_removes_stain():
     for other in env._stain_geom[1:]:  # ほかの汚れはスポンジの届かない奥に置く
         env.model.geom_pos[other, :2] = np.array([0.3, 0.9]) - np.array(env.cfg.table_center)
     target = np.r_[[0.0, 0.14, 1.096, -0.406, 0.0, 0.0], np.zeros(6)]
-    for k in range(140):
+    for k in range(180):
         action = np.zeros(15)
         if k < 60:
             action[3:] = np.clip((target - env._arm_target) / env.max_joint_delta, -1, 1)

@@ -29,7 +29,7 @@ BASE_JOINTS = ["slide_joint_x", "slide_joint_y", "hinge_joint_z"]
 HEAD_ACTUATORS = ["head_pan", "head_tilt"]
 
 # 置き場所が重ならないように使う、物体の xy 方向のおおよその半径
-_FOOTPRINT = {"cup": 0.04, "plate": 0.095, "bottle": 0.035, "box": 0.05}
+_FOOTPRINT = {"cup": 0.04, "plate": 0.095, "bottle": 0.035, "box": 0.05, "glass": 0.03}
 
 
 class TableCleanEnv(gym.Env):
@@ -230,13 +230,16 @@ class TableCleanEnv(gym.Env):
     def _place_objects(self) -> None:
         lo, hi = self._table_bounds(self.cfg.margin)
         # 手前側は初期姿勢の腕と干渉するので空けておく
-        lo = lo.copy()
+        lo, hi = lo.copy(), hi.copy()
         lo[1] += 0.10
+        if self.cfg.object_max_depth is not None:
+            hi[1] = min(hi[1], lo[1] - 0.10 - self.cfg.margin + self.cfg.object_max_depth)
         placed: list[tuple[np.ndarray, float]] = []
         for i, kind in enumerate(self.cfg.object_types):
             r = _FOOTPRINT[kind]
             for _ in range(200):
-                xy = self.np_random.uniform(lo + r, hi - r)
+                # 範囲が物より狭いときは手前の端に寄せる
+                xy = self.np_random.uniform(lo + r, np.maximum(hi - r, lo + r))
                 if all(np.linalg.norm(xy - p) > r + pr + 0.01 for p, pr in placed):
                     break
             placed.append((xy, r))
