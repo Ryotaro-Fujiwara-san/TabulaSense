@@ -34,6 +34,13 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 |---|---|
 | ![head](docs/images/head_cam.png) | ![labels](docs/images/head_cam_labels.png) |
 
+## ワンクリックで起動（Windows）
+
+フォルダの中の **`start-sim.bat` をダブルクリック**するとシミュレーションが開きます。
+初回は仮想環境の作成・ライブラリのインストール・XLeRobot モデルの取得まで自動で行います（数分）。
+デスクトップから起動したいときは、`start-sim.bat` を右クリック →「ショートカットの作成」で
+できたショートカットをデスクトップに移してください。
+
 ## セットアップ（自分の PC で動かす）
 
 必要なもの: **Python 3.10 以上**と **Git**。動作確認は Python 3.11 / MuJoCo 3.14 で行いました。
@@ -123,6 +130,25 @@ print(info)  # {'objects_on_table': 4, 'objects_in_bin': 0, 'objects_dropped': 0
 - 台車の速度制御のゲインを上げた（kv=10 → 300）
 - 頭の 2 関節に駆動がなく重力で垂れていたので、位置制御を足した（`env.set_head_pose()`）
 
+## 開発の進め方（どこを編集するか）
+
+| やりたいこと | 編集するファイル |
+|---|---|
+| テーブルの大きさ・高さ、食器の種類や数、汚れの数・大きさを変える | `src/tabulasense/sim/scene.py` の `SceneConfig` |
+| 食器の形・色・重さを変える、新しい食器を足す | `src/tabulasense/sim/scene.py` の `OBJECT_TYPES`（足したら `env.py` の `_FOOTPRINT` にも追加） |
+| 報酬・成功条件・拭き取りの効き方を変える | `src/tabulasense/sim/env.py` の `step()` と `_update_dirt()` |
+| ロボットの動き（つかむ・運ぶ・拭く）を手書きで作る | `scripts/demo_wipe.py` をコピーして新しいスクリプトにする |
+| 画面に表示する動きを変える | `scripts/view.py` |
+| 物と汚れを見分ける認識（検出モデル）を作る | `src/tabulasense/perception/` に追加（`oracle.py` の出力が正解データ） |
+| 変更が壊れていないか確かめる | `tests/` にテストを足し、`pytest` を実行 |
+
+おすすめの順番（詳しくは [docs/roadmap.md](docs/roadmap.md)）:
+
+1. `SceneConfig` の値を変えて `start-sim.bat` で見てみる（シミュレーションに慣れる）
+2. `demo_wipe.py` をまねて「カップをつかんでビンに入れる」スクリプトを作る
+3. そのデモを記録して模倣学習（ACT など）で方策を学習させる
+4. `perception/` に検出モデルを足し、`oracle.py` の正解と比べて精度を測る
+
 ## ディレクトリ構成
 
 ```
@@ -131,6 +157,7 @@ TabulaSense/
 │   ├── sim/scene.py          シーンの組み立て（MjSpec）
 │   ├── sim/env.py            Gymnasium 環境
 │   └── perception/oracle.py  真値のラベル画像（検出モデルの正解・比較用）
+├── start-sim.bat             ダブルクリックで起動（Windows）
 ├── scripts/                  XLeRobot の取得、表示、描画、デモ
 ├── tests/
 ├── docs/roadmap.md           開発計画（シミュレーション → XLeRobot 実機 → 顧客試験 → YOR）
