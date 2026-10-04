@@ -58,7 +58,12 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 デスクトップから起動したいときは、`start-sim.bat` を右クリック →「ショートカットの作成」で
 できたショートカットをデスクトップに移してください。
 
+起動するたびに GitHub から最新版を自動で取り込みます（`git pull`）。ライブラリや XLeRobot モデルの更新が必要なときも自動で行います。
+ネットにつながっていないときや、PC 側でファイルを書き換えて取り込めないときは、注意を表示して手元の版で起動します。
+
 > **Double-click `start-sim.bat`** in the folder to open the simulation.
+> Every launch pulls the latest version from GitHub (`git pull`), and reinstalls libraries or re-downloads the XLeRobot model when needed.
+> If it can't update (offline, or files were edited on this PC), it shows a warning and starts the local version.
 > The first run automatically creates the virtual environment, installs the libraries and downloads the XLeRobot model (a few minutes).
 > To launch from the desktop, right-click `start-sim.bat` → "Create shortcut" and move the shortcut to your desktop.
 
@@ -239,7 +244,7 @@ TabulaSense/
 │   └── perception/oracle.py  真値のラベル画像 / ground-truth label images
 ├── start-sim.bat             ダブルクリックで起動（Windows） / double-click launcher (Windows)
 ├── start-pick.bat            つかむデモを起動（Windows） / launches the grasping demo (Windows)
-├── scripts/                  XLeRobot の取得、表示、描画、デモ / model download, viewer, rendering, demos
+├── scripts/                  XLeRobot の取得、表示、描画、デモ、起動処理（launch.bat） / model download, viewer, rendering, demos, launcher (launch.bat)
 ├── tests/
 ├── docs/roadmap.md           開発計画 / development plan
 └── third_party/              外部リポジトリ（git 管理しない） / external repos (not tracked by git)
