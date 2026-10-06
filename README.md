@@ -31,7 +31,7 @@ TabulaSense は、施設内を移動し、テーブルの上にある「片付�
 
 ## 開発目標（MVP） / Development goals (MVP)
 
-XLeRobotをMuJoCoでシミュレーションし、最新論文を実装して精度向上も目指す。
+XLeRobot（マイクアレイ（ReSpeaker等）搭載）をMuJoCoでシミュレーションし、最新論文を実装して精度向上も目指す。
 さらに、XLeRobotを自費で購入し組み立てる。そして顧客で試験導入しながら精度向上を目指す。
 YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.ai/)を助成金で購入しさらにPoCを行う。
 
