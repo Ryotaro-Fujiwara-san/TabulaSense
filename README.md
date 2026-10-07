@@ -66,12 +66,10 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 - **スキルの層（Skills）**：「拭く」「つかむ」「置く」など、個別に学習した動作。
 - **頭の層（Brain）**：指示理解、地図、計画、ルール記憶、聞き返し。
 
+
 ### Step 0：開発環境の準備
-- Python、Git／GitHubでのコード管理
-- ROS 2（Jazzy等）
-- MuJoCo（シミュレーター）
-- LeRobot（データ収集・学習基盤）
-- クラウドGPU（学習用）
+> 構築手順は [docs/setup.md](docs/setup.md)（`bash scripts/setup.sh` で自動構築）
+
 
 ### Step 1：シミュレーション上にロボットを構築
 - XLeRobotのモデルをMuJoCoに読み込む
