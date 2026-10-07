@@ -67,6 +67,8 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 - **頭の層（Brain）**：指示理解、地図、計画、ルール記憶、聞き返し。
 
 ### Step 0：開発環境の準備（1〜2週間）
+> 構築手順は [docs/setup.md](docs/setup.md)（`bash scripts/setup.sh` で自動構築）
+
 - Python、Git／GitHubでのコード管理
 - ROS 2（Jazzy等）
 - MuJoCo（シミュレーター）

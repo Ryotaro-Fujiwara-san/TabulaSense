@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# ROS 2 (colcon)
+build/
+install/
+log/
+
+# 学習・データ（大きいので Git に入れない）
+outputs/
+data/
+*.ckpt
+*.safetensors
