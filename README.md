@@ -70,6 +70,7 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 ### Step 0：開発環境の準備
 > 構築手順は [docs/setup.md](docs/setup.md)（`bash scripts/setup.sh` で自動構築）
 
+このプロジェクトではUbuntu の中（/home/expo7/TabulaSense）に必要な編集ファイルを用意します。
 
 ### Step 1：シミュレーション上にロボットを構築
 - XLeRobotのモデルをMuJoCoに読み込む
