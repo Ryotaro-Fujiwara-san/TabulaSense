@@ -74,6 +74,24 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 
 ### Step 1：シミュレーション上にロボットを構築
 - XLeRobotのモデルをMuJoCoに読み込む
+まずファイルのパスを扱うための機能を読み込みます
+```python
+from pathlib import Path
+```
+次にMuJoCo本体とロボットを3D表示するビューアを読み込みます。
+次に、このフォルダにはscene.xmlというMuJoCo に「何を、どんな環境・物理条件で表示してシミュレーションするか」を伝える XML 形式の設定ファイルがあります。
+そこでMuJoCoはモデルを読み込むときにscene.xml がどこにあるかを知る必要があります。
+まず以下のように右側で作った scene.xml のパスを、model_path という名前で使えるようにします。
+```python
+model_path = 結果
+```
+ここでもし以下のように書くと、問題が発生します。
+```python
+model_path = Path("scene.xml")
+```
+これだと、Python は「ターミナルで今いるフォルダにある scene.xml」を探します。別のフォルダからスクリプトを実行すると、見つからないことがあります。
+今回の目的は、/home/expo7/TabulaSense/sim/xlerobot/scene.xmlというパスを
+
 - 自宅に近いテーブルと部屋を再現する
 - キーボード／ゲームパッドでアーム・台車・首を操作できるようにする
 - 体の層のインターフェース（`move_arm()`、`get_camera_image()`、`move_base()` 等）を定義する
