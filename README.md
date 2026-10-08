@@ -80,6 +80,10 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 from pathlib import Path
 ```
 次にMuJoCo本体とロボットを3D表示するビューアを読み込みます。
+```python
+import mujoco
+import mujoco.viewer
+```
 次に、このフォルダにはscene.xmlというMuJoCo に「何を、どんな環境・物理条件で表示してシミュレーションするか」を伝える XML 形式の設定ファイルがあります。
 そこでMuJoCoはモデルを読み込むときにscene.xml がどこにあるかを知る必要があります。
 まず以下のように右側で作った scene.xml のパスを、model_path という名前で使えるようにします。
