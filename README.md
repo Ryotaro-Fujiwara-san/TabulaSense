@@ -95,7 +95,13 @@ model_path = 結果
 model_path = Path("scene.xml")
 ```
 これだと、Python は「ターミナルで今いるフォルダにある scene.xml」を探します。別のフォルダからスクリプトを実行すると、見つからないことがあります。
-今回の目的は、/home/expo7/TabulaSense/sim/xlerobot/scene.xmlというパスを
+今回の目的は、/home/expo7/TabulaSense/sim/xlerobot/scene.xmlというパスを指定することです。ここで以下のコードを書きます。
+```python
+model_path = Path(__file__).resolve().with_name("scene.xml")
+```
+Path(__file__).resolve()のうち、__file__ は実行中の .py ファイルのパスです。Path(__file__) は、そのパスを Path 形式にします。
+.resolve() は、相対パスなら絶対パスに変換し、パスを整理します。このあと、.with_name("scene.xml") をつなげると、ファイル名を置き換えて scene.xml のパスを作れます。
+次に
 
 - 自宅に近いテーブルと部屋を再現する
 - キーボード／ゲームパッドでアーム・台車・首を操作できるようにする
