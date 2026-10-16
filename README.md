@@ -66,6 +66,10 @@ YORのシミュレーションモデルを作成し、YOR(https://yourownrobot.a
 - **スキルの層（Skills）**：「拭く」「つかむ」「置く」など、個別に学習した動作。
 - **頭の層（Brain）**：指示理解、地図、計画、ルール記憶、聞き返し。
 
+**読むべき論文**
+
+- https://dl.acm.org/doi/epdf/10.1145/3786782
+- https://dl.acm.org/doi/epdf/10.1145/3522580
 
 ### Step 0：開発環境の準備
 > 構築手順は [docs/setup.md](docs/setup.md)（`bash scripts/setup.sh` で自動構築）
